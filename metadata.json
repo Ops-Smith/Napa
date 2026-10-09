@@ -1,0 +1,62 @@
+{
+  "buildx.build.provenance": {
+    "builder": {
+      "id": ""
+    },
+    "buildType": "https://mobyproject.org/buildkit@v1",
+    "materials": [
+      {
+        "uri": "pkg:docker/node@18-alpine?platform=linux%2Famd64",
+        "digest": {
+          "sha256": "8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e"
+        }
+      }
+    ],
+    "invocation": {
+      "configSource": {
+        "entryPoint": "Dockerfile"
+      },
+      "parameters": {
+        "frontend": "dockerfile.v0",
+        "args": {
+          "no-cache": ""
+        },
+        "locals": [
+          {
+            "name": "context"
+          },
+          {
+            "name": "dockerfile"
+          }
+        ],
+        "root": {
+          "configSource": {
+            "path": "Dockerfile"
+          },
+          "request": {
+            "args": {
+              "no-cache": "",
+              "vcs:localdir:context": ".",
+              "vcs:localdir:dockerfile": ".",
+              "vcs:revision": "b220033a574ee17c9b8f86bec92894e0d61c4cef",
+              "vcs:source": "https://github.com/monyslim/Napa.git"
+            }
+          }
+        },
+        "compatibilityVersion": 30
+      },
+      "environment": {
+        "dockerfileVersion": "1.27.0",
+        "platform": "linux/amd64"
+      }
+    }
+  },
+  "buildx.build.ref": "default/default/th6onl2ae4n3j4sarnebpi6ao",
+  "containerimage.descriptor": {
+    "mediaType": "application/vnd.oci.image.index.v1+json",
+    "digest": "sha256:c64aedb4f83a7b14651bd3aa5761e5528ff6d282a187ad806a62c5a87370fef7",
+    "size": 856
+  },
+  "containerimage.digest": "sha256:c64aedb4f83a7b14651bd3aa5761e5528ff6d282a187ad806a62c5a87370fef7",
+  "image.name": "docker.io/monyslim/napa:V1.0.0"
+}
