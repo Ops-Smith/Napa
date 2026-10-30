@@ -8,7 +8,7 @@ on:
 
 # This is the job that the bot will run
 jobs:
-    say Hello:
+    say-hello:
         runs-on: ubuntu-latest
         steps:
             - name: 
