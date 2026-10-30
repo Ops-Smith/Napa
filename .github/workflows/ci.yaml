@@ -11,7 +11,7 @@ jobs:
     Say Hello:
         runs-on: ubuntu-latest
         steps:
-            - name: Say_Hello
+            - name: say-hello
               run: echo "Hello from GitHub Actions!"
 
             - name: Look at the folder before checkout
