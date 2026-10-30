@@ -8,10 +8,10 @@ on:
 
 # This is the job that the bot will run
 jobs:
-    Say Hello:
+    say Hello:
         runs-on: ubuntu-latest
         steps:
-            - name: say-hello
+            - name: 
               run: echo "Hello from GitHub Actions!"
 
             - name: Look at the folder before checkout
