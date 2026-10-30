@@ -58,17 +58,17 @@ db.getSiblingDB("admin").auth("admin")
 **It will return → ********{ ok: 1 }
 
 # List all the databases
-```sh
+```bash
 show dbs
 ```
 
 # Switching to your application's database
-```sh
+```bash
 use napa
 ```
 
 # List all the tables/collections inside that database:
-```sh
+```bash
 show collections
 ```
 
