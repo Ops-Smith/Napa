@@ -4,5 +4,5 @@ Dockerfile
 docker-compose.yaml
 .env
 .env
-.git
-.github/
+/.git
+/.github
