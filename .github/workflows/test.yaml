@@ -2,7 +2,7 @@ name: "Test Actions"
 
 on:
     workflow_run:
-        workflows: ["CI"]
+        workflows: ["Hello Actions"]
         branches: [master]
         types:
             - completed
