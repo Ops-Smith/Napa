@@ -38,7 +38,7 @@ jobs:
             - name: 📧 Notify Development Start
               uses: dawidd6/action-send-mail@v4
               with:
-                server_address: ://gmail.com
+                server_address: smtp.gmail.com
                 server_port: 465
                 secure: true
                 username: ${{ secrets.EMAIL }}
@@ -74,7 +74,7 @@ jobs:
               if: failure()
               uses: dawidd6/action-send-mail@v4
               with:
-                server_address: ://gmail.com
+                server_address: smtp.gmail.com
                 server_port: 465
                 secure: true
                 username: ${{ secrets.EMAIL }}
