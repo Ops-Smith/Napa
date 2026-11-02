@@ -68,26 +68,23 @@ jobs:
                 load: true
                 tags: ${{ secrets.DOCKERHUB_USERNAME }}/napa:${{ github.event.workflow_run.head_sha || github.sha }}
 
+            # Save the compiled Docker image into a tarball archive file
+            - name: Archive Docker Image
+              run: |
+                docker save ${{ secrets.DOCKERHUB_USERNAME }}/napa:${{ github.event.workflow_run.head_sha || github.sha }} -o napa-image.tar
+
+            # Upload Image Artifact
             - name: Upload Image Artifact
               uses: actions/upload-artifact@v4
               with:
                 name: napa-docker-artifact
                 path: napa-image.tar
                 retention-days: 1
-            - name: Archive Test Logs
-              uses: actions/upload-artifact@v4
-              with:
-                name: pipeline-text-logs
-                path: |
-                    app/test_results.txt
-                    trivy-results.txt
-                retention-days: 5
 
-            # 2. Scan the image with Trivy
+            # 2. Scan the image with Trivy (This creates trivy-results.txt)
             - name: Scan the image with Trivy
               uses: aquasecurity/trivy-action@0.35.0
               with:
-                # FIX 2: Replaced invalid 'store-${{ matrix.component }}:ci' with your exact local image tag
                 image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/napa:${{ github.event.workflow_run.head_sha || github.sha }}'
                 format: table
                 output: trivy-results.txt
@@ -95,11 +92,23 @@ jobs:
                 ignore-unfixed: true
                 exit-code: "0"
 
+            # FIX: Moved this step down so trivy-results.txt actually exists before archiving!
+            - name: Archive Test and Scan Logs
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                name: pipeline-text-logs
+                path: |
+                    app/test_results.txt
+                    trivy-results.txt
+                # Prevents a pipeline crash if app/test_results.txt isn't in this job's workspace directory
+                if-no-files-found: warn
+                retention-days: 5
+
             # 3. Show the Trivy report in GitHub Summary
             - name: Show the Trivy report
               if: always()
               run: |
-                  # FIX 3: Replaced non-existent matrix filenames with standard fallback checks
                   if [ -f trivy-results.txt ]; then
                     cat trivy-results.txt
                     {
@@ -152,6 +161,7 @@ jobs:
                   Branch: ${{ github.ref_name }}
                   Version: ${{ env.version }}
 
+            # 6. Markdown Summary Matrix Table Layout
             - name: Summary table
               if: always()
               run: |

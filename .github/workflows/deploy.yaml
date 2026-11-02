@@ -15,6 +15,7 @@ jobs:
         runs-on: ubuntu-latest
         if: ${{ github.event.workflow_run.conclusion == 'success' }}
         steps:
+            # 1. Download the Docker image archive tar file
             - name: Download Image Artifact Across Workflows
               uses: dawidd6/action-download-artifact@v6
               with:
@@ -22,23 +23,35 @@ jobs:
                 workflow: "Build Actions"
                 name: napa-docker-artifact
                 run_id: ${{ github.event.workflow_run.id }}
+
+            # FIX: If you want to download text logs from the parent build, download them first before archiving them
+            - name: Download Test Text Logs Across Workflows
+              uses: dawidd6/action-download-artifact@v6
+              with:
+                github_token: ${{ secrets.GITHUB_TOKEN }}
+                workflow: "Build Actions"
+                name: pipeline-text-logs
+                run_id: ${{ github.event.workflow_run.id }}
+                # Gracefully skip if it wasn't uploaded in the build step to prevent deployment halts
+                if_no_artifact_found: warn 
             
             - name: Extract Project Version
               id: get_version
               run: |
                 echo "version=1.0.0" >> $GITHUB_ENV
 
-
+            # This step will now execute cleanly since files are downloaded onto the runner filesystem
             - name: Archive Test Logs
               uses: actions/upload-artifact@v4
               with:
-                name: pipeline-text-logs
+                name: deployed-pipeline-text-logs
                 path: |
                     app/test_results.txt
                     trivy-results.txt
+                if-no-files-found: ignore
                 retention-days: 5
             
-            # 1. Start Email Notification
+            # 2. Start Email Notification
             - name: 📧 Notify Deployment Start
               uses: dawidd6/action-send-mail@v4
               with:
@@ -51,7 +64,7 @@ jobs:
                 to: ${{ secrets.EMAIL }}
                 from: "DevOps Admin"
                 body: |
-                  Deployment pipeline has started!
+                  Development pipeline has started!
                   Branch: ${{ github.ref_name }}
                   Version: ${{ env.version }}
 
@@ -72,7 +85,7 @@ jobs:
                 docker ps
                 docker logs napa-app
 
-            # 2. Success Email Notification
+            # 3. Success Email Notification
             - name: 📧 Notify Deployment Success
               if: success()
               uses: dawidd6/action-send-mail@v4
@@ -91,8 +104,7 @@ jobs:
                   Branch: ${{ github.ref_name }}
                   Version: ${{ env.version }}
 
-            
-            # 3. Failure Email Notification
+            # 4. Failure Email Notification
             - name: 📧 Notify Deployment Failure
               if: failure()
               uses: dawidd6/action-send-mail@v4
@@ -112,6 +124,7 @@ jobs:
                   Branch: ${{ github.ref_name }}
                   Version: ${{ env.version }}
 
+            # 5. Summary Matrix Table
             - name: Summary table
               if: always()
               run: |
