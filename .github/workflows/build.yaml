@@ -88,3 +88,23 @@ jobs:
                   🚨 Build or tests failed in development
                   Branch: ${{ github.ref_name }}
                   Version: ${{ env.version }}
+
+            - name: Scan the image with Trivy
+              uses: aquasecurity/trivy-action@0.35.0
+              with:
+                image-ref: store-${{ matrix.component }}:ci
+                format: table
+                output: trivy-${{ matrix.component }}.txt
+                severity: CRITICAL,HIGH
+                ignore-unfixed: true
+                exit-code: "1"
+            - name: Show the Trivy report
+              if: always()
+              run: |
+                  cat trivy-${{ matrix.component }}.txt
+                  {
+                    echo "### Trivy scan: ${{ matrix.component }}"
+                    echo '```'
+                    cat trivy-${{ matrix.component }}.txt
+                    echo '```'
+                    } >> "$GITHUB_STEP_SUMMARY"
