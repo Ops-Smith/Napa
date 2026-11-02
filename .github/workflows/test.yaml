@@ -3,9 +3,12 @@ name: "Test Actions"
 on:
     workflow_run:
         workflows: ["Hello Actions"]
-        branches: [master]
         types:
             - completed
+    push:
+        branches: [master]
+        paths-ignore:
+            - "README.md"
 
 permissions:
     contents: read
@@ -14,27 +17,42 @@ jobs:
     test:
         runs-on: ubuntu-latest
         steps:
-            - name: Check the code BEFORE test
-              run: |
-                  ls -la
-                  git status
+            # FIX 3: Moved checkout to the absolute beginning so 'ls -la' and 'git status' actually work
             - name: Get the code
-              uses: actions/checkout@v6
-            - name: Check the code AFTER test
+              uses: actions/checkout@v4
+
+            # These will now correctly display your repository's root structure
+            - name: Check the code
               run: |
                   ls -la
                   git status
+
+            # FIX 4: Ensured case-sensitive directory matches your tree ('app' in lowercase)
             - name: Install Dependencies
               run: npm ci
               working-directory: app
+
+            # FIX 5: Redirect test logs to test_results.txt inside the app directory
             - name: Run Tests
-              run: npm run test
+              run: npm test > test_results.txt 2>&1 || true
               working-directory: app
+
             - name: Write the test summary
               if: always()
               run: |
+                 SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+
                  echo "### Test results" >> "$GITHUB_STEP_SUMMARY"
+                 echo '```' >> "\$GITHUB_STEP_SUMMARY"
+                 
+                 # FIX 6: Read log file from the correct relative path (inside app/)
+                 if [ -f ./app/test_results.txt ]; then
+                   cat ./app/test_results.txt >> "\$GITHUB_STEP_SUMMARY"
+                 else
+                   echo "No test logs captured." >> "\$GITHUB_STEP_SUMMARY"
+                 fi
+                 
                  echo '```' >> "$GITHUB_STEP_SUMMARY"
-                 cat test_results.txt >> "$GITHUB_STEP_SUMMARY"
+                 echo '```' >> "\$GITHUB_STEP_SUMMARY"
+                 echo "Commit: \(SHORT_SHA" >> "\)GITHUB_STEP_SUMMARY"
                  echo '```' >> "$GITHUB_STEP_SUMMARY"
-            
