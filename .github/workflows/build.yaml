@@ -16,7 +16,7 @@ permissions:
 
 # This is the job that the bot will run
 jobs:
-    Build the Docker Image:
+    build the docker image:
         runs-on: ubuntu-latest
         steps:
             - name: Set Up Docker
