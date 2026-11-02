@@ -49,6 +49,12 @@ jobs:
                   Branch: ${{ github.ref_name }}
                   Version: ${{ env.version }}
 
+            - name: Generate Local Environment Configuration
+              run: |
+                echo "MONGODB_URI=mongodb://admin:password@mongo-db:27017/napa?authSource=admin" > ./app/.env
+                echo "PORT=3000" >> ./app/.env
+                echo "NODE_ENV=production" >> ./app/.env
+
             - name: Set Up Docker
               uses: docker/setup-buildx-action@v3
 
