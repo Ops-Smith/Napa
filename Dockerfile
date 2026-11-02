@@ -8,7 +8,7 @@ WORKDIR /napa/app
 COPY app/package*.json ./
 
 # Install ALL dependencies (including devDependencies if needed for building)
-RUN npm ci
+RUN npm install
 
 # Copy the rest of the application files
 COPY ./app ./
