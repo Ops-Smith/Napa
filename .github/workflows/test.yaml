@@ -37,5 +37,5 @@ jobs:
                  echo '```' >> "$GITHUB_STEP_SUMMARY"
                  cat test_results.txt >> "$GITHUB_STEP_SUMMARY"
                  echo '```' >> "$GITHUB_STEP_SUMMARY"
-                 echo '```' >> ${{ GITHUB_SHA::7}}
+                 echo '```' >> ${{ GITHUB_SHA::7}} >> "$GITHUB_STEP_SUMMARY"
             
