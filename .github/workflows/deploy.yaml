@@ -75,29 +75,26 @@ jobs:
 
             - name: Run Containerized Application
               run: |
-                # 1. Clean up any existing instances from previous runs
                 docker stop napa-app mongo-db 2>/dev/null || true
                 docker rm napa-app mongo-db 2>/dev/null || true
                 docker network rm napa-network 2>/dev/null || true
 
-                # 2. Create a shared network bridge so the app container can resolve the "mongo" hostname
                 docker network create napa-network
 
-                # 3. Spin up a local background MongoDB service matching your connection credentials
                 docker run -d --name mongo-db --network napa-network \
                   -e MONGO_INITDB_ROOT_USERNAME=admin \
                   -e MONGO_INITDB_ROOT_PASSWORD=password \
                   mongo:latest
 
-                # 4. Start your application connected to the exact same bridge network
+                # FIX: Injected repository secret key directly into the application container launch script
                 docker run -d --name napa-app -p 3000:3000 --network napa-network --restart always \
-                  -e MONGODB_URI="mongodb://admin:password@mongo-db:27017/napa?authSource=admin" \
+                  -e MONGODB_URI="${{ secrets.MONGODB_URI }}" \
                   $(docker images --format "{{.Repository}}:{{.Tag}}" | grep "napa" | head -n 1)
                 
-                # 5. Wait and verify health logs
                 sleep 5
                 docker ps
                 docker logs napa-app
+
 
 
             # 3. Success Email Notification
