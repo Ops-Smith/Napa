@@ -26,10 +26,10 @@ jobs:
                   git status
             - name: Install Dependencies
               run: npm ci
-              working-directory: ./app
+              working-directory: app
             - name: Run Tests
               run: npm run test
-              working-directory: ./app
+              working-directory: app
             - name: Write the test summary
               if: always()
               run: |
