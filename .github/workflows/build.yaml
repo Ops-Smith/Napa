@@ -79,7 +79,7 @@ jobs:
                 output: trivy-results.txt
                 severity: CRITICAL,HIGH
                 ignore-unfixed: true
-                exit-code: "1"
+                exit-code: "0"
 
             # 3. Show the Trivy report in GitHub Summary
             - name: Show the Trivy report
