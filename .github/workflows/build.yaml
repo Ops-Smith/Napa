@@ -17,24 +17,22 @@ permissions:
 jobs:
     build-the-docker-image:
         runs-on: ubuntu-latest
-        # Ensure we only build if the tests passed successfully
         if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
         steps:
-            # FIX 1: Downgraded checkout to stable production v4.2.2 to remove Node 20 deprecation warnings
             - name: Get the code
               uses: actions/checkout@v4.2.2
               with:
                 ref: ${{ github.event.workflow_run.head_sha || github.sha }}
                 fetch-depth: 0
 
-            # NEW: Extract the version from package.json and save it to env context
+            # Extract the version from package.json and save it to env context
             - name: Extract Project Version
               id: get_version
               run: |
                 VERSION=$(node -p "require('./app/package.json').version")
                 echo "version=$VERSION" >> $GITHUB_ENV
 
-            # NEW: Send the start notification email cleanly on Node 24 compatible engines
+            # 1. Start Email Notification
             - name: 📧 Notify Development Start
               uses: dawidd6/action-send-mail@v4
               with:
@@ -67,9 +65,60 @@ jobs:
                 context: .
                 file: ./Dockerfile
                 push: true
+                # FIX 1: Also export to the local Docker daemon workspace so Trivy can see it
+                load: true
                 tags: ${{ secrets.DOCKERHUB_USERNAME }}/napa:${{ github.event.workflow_run.head_sha || github.sha }}
 
-            # NEW: Notify Development Failure (Upgraded to v4 to clear warnings)
+            # 2. Scan the image with Trivy
+            - name: Scan the image with Trivy
+              uses: aquasecurity/trivy-action@0.35.0
+              with:
+                # FIX 2: Replaced invalid 'store-${{ matrix.component }}:ci' with your exact local image tag
+                image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/napa:${{ github.event.workflow_run.head_sha || github.sha }}'
+                format: table
+                output: trivy-results.txt
+                severity: CRITICAL,HIGH
+                ignore-unfixed: true
+                exit-code: "1"
+
+            # 3. Show the Trivy report in GitHub Summary
+            - name: Show the Trivy report
+              if: always()
+              run: |
+                  # FIX 3: Replaced non-existent matrix filenames with standard fallback checks
+                  if [ -f trivy-results.txt ]; then
+                    cat trivy-results.txt
+                    {
+                      echo "### Trivy scan results"
+                      echo '```'
+                      cat trivy-results.txt
+                      echo '```'
+                    } >> "$GITHUB_STEP_SUMMARY"
+                  else
+                    echo "Trivy log file not found." >> "$GITHUB_STEP_SUMMARY"
+                  fi
+
+            # 4. Success Email Notification
+            - name: 📧 Notify Development Build Success
+              if: success()
+              uses: dawidd6/action-send-mail@v4
+              with:
+                server_address: smtp.gmail.com
+                server_port: 465
+                secure: true
+                username: ${{ secrets.EMAIL }}
+                password: ${{ secrets.EMAIL_PASSWORD }}
+                subject: "✅ Development Stage Built Successfully - Version ${{ env.version }}"
+                to: ${{ secrets.EMAIL }}
+                from: "DevOps Admin"
+                body: |
+                  🎉 Success! The Docker image has built, passed vulnerability scans, and pushed cleanly.
+                  
+                  📦 Image Tag: ${{ secrets.DOCKERHUB_USERNAME }}/napa:${{ github.event.workflow_run.head_sha || github.sha }}
+                  Branch: ${{ github.ref_name }}
+                  Version: ${{ env.version }}
+
+            # 5. Failure Email Notification
             - name: 📧 Notify Development Failure
               if: failure()
               uses: dawidd6/action-send-mail@v4
@@ -85,26 +134,6 @@ jobs:
                 body: |
                   ❌ Development stage failed!
                   
-                  🚨 Build or tests failed in development
+                  🚨 Build, tests, or Trivy vulnerability scan failed in development
                   Branch: ${{ github.ref_name }}
                   Version: ${{ env.version }}
-
-            - name: Scan the image with Trivy
-              uses: aquasecurity/trivy-action@0.35.0
-              with:
-                image-ref: store-${{ matrix.component }}:ci
-                format: table
-                output: trivy-${{ matrix.component }}.txt
-                severity: CRITICAL,HIGH
-                ignore-unfixed: true
-                exit-code: "1"
-            - name: Show the Trivy report
-              if: always()
-              run: |
-                  cat trivy-${{ matrix.component }}.txt
-                  {
-                    echo "### Trivy scan: ${{ matrix.component }}"
-                    echo '```'
-                    cat trivy-${{ matrix.component }}.txt
-                    echo '```'
-                    } >> "$GITHUB_STEP_SUMMARY"
