@@ -1,0 +1,41 @@
+name: "Test CI"
+
+on:
+    workflow_run:
+        workflows: ["CI"]
+        branches: [master]
+        types:
+            - completed
+
+permissions:
+    contents: read
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Check the code BEFORE test
+              run: |
+                  ls -la
+                  git status
+            - name: Get the code
+              uses: actions/checkout@v6
+            - name: Check the code AFTER test
+              run: |
+                  ls -la
+                  git status
+            - name: Install Dependencies
+              run: npm ci
+              working-directory: ./app
+            - name: Run Tests
+              run: npm run test
+              working-directory: ./app
+            - name: Write the test summary
+              if: always()
+              run: |
+                 echo "### Test results" >> "$GITHUB_STEP_SUMMARY"
+                 echo '```' >> "$GITHUB_STEP_SUMMARY"
+                 cat test_results.txt >> "$GITHUB_STEP_SUMMARY"
+                 echo '```' >> "$GITHUB_STEP_SUMMARY"
+                 echo '```' >> ${{ GITHUB_SHA::7}}
+            
