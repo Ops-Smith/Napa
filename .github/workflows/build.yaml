@@ -17,12 +17,14 @@ permissions:
 jobs:
     build-the-docker-image:
         runs-on: ubuntu-latest
+        # Ensure we only build if the tests passed successfully
+        if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
         steps:
-            # FIX 1: ALWAYS checkout the code first before setting up tools
             - name: Get the code
               uses: actions/checkout@v4
+              with:
+                ref: ${{ github.event.workflow_run.head_sha }}
 
-            # FIX 2: Downgraded to latest stable production release (v3)
             - name: Set Up Docker
               uses: docker/setup-buildx-action@v3
 
@@ -39,4 +41,4 @@ jobs:
                 context: .
                 file: ./Dockerfile
                 push: true
-                tags: ${{ secrets.DOCKERHUB_USERNAME }}/napa:${{ github.sha }}
+                tags: ${{ secrets.DOCKERHUB_USERNAME }}/napa:${{ github.event.workflow_run.head_sha || github.sha }}

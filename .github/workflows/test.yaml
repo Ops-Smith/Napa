@@ -29,7 +29,7 @@ jobs:
 
             # FIX 4: Ensured case-sensitive directory matches your tree ('app' in lowercase)
             - name: Install Dependencies
-              run: npm ci
+              run: npm install
               working-directory: app
 
             # FIX 5: Redirect test logs to test_results.txt inside the app directory
