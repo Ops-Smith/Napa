@@ -86,9 +86,12 @@ jobs:
                   -e MONGO_INITDB_ROOT_PASSWORD=password \
                   mongo:latest
 
-                # FIX: Injected repository secret key directly into the application container launch script
+                # 3. PASS THE SECRET DIRECTLY TO DOCKER AT RUNTIME
+                # This guarantees that Node.js reads it instantly, even if the .env file is completely missing inside the container image.
                 docker run -d --name napa-app -p 3000:3000 --network napa-network --restart always \
                   -e MONGODB_URI="${{ secrets.MONGODB_URI }}" \
+                  -e PORT=3000 \
+                  -e NODE_ENV=production \
                   $(docker images --format "{{.Repository}}:{{.Tag}}" | grep "napa" | head -n 1)
                 
                 sleep 5
