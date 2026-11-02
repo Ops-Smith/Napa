@@ -78,12 +78,15 @@ jobs:
                 docker ps -q --filter "name=napa-app" | xargs -r docker stop
                 docker ps -aq --filter "name=napa-app" | xargs -r docker rm
                 
+                # FIX: Pass your MongoDB URI environment variable directly to the container instance
                 docker run -d --name napa-app -p 3000:3000 --restart always \
+                  -e MONGODB_URI="${{ secrets.MONGODB_URI }}" \
                   $(docker images --format "{{.Repository}}:{{.Tag}}" | grep "napa" | head -n 1)
                 
                 sleep 5
                 docker ps
                 docker logs napa-app
+
 
             # 3. Success Email Notification
             - name: 📧 Notify Deployment Success
