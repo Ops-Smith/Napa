@@ -1,10 +1,10 @@
 # This is the name of the workflow
-name: "Build"
+name: "Build Actions"
 
 # This is the event that will trigger the workflow
 on:
     workflow_run:
-        workflows: ["Test CI"]
+        workflows: ["Test Actions"]
     push:
         branches: [master]
         # This ensures that files or folders listed won't trigger the workflow

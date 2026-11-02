@@ -1,4 +1,4 @@
-name: "Test CI"
+name: "Test Actions"
 
 on:
     workflow_run:
@@ -19,23 +19,36 @@ jobs:
                   ls -la
                   git status
             - name: Get the code
-              uses: actions/checkout@v6
+              uses: actions/checkout@v4
             - name: Check the code AFTER test
               run: |
                   ls -la
                   git status
             - name: Install Dependencies
               run: npm ci
-              working-directory: ./app
+              working-directory: ./App
             - name: Run Tests
               run: npm run test
-              working-directory: ./app
+              working-directory: ./App
             - name: Write the test summary
               if: always()
               run: |
+                 # Extract the short 7-character commit SHA safely
+                 SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+
                  echo "### Test results" >> "$GITHUB_STEP_SUMMARY"
+                 echo '```' >> "\$GITHUB_STEP_SUMMARY"
+                 
+                 # Note: Ensure your test runner actually outputs a 'test_results.txt' file in the root
+                 if [ -f test_results.txt ]; then
+                   cat test_results.txt >> "\$GITHUB_STEP_SUMMARY"
+                 else
+                   echo "No test_results.txt found." >> "\$GITHUB_STEP_SUMMARY"
+                 fi
+                 
                  echo '```' >> "$GITHUB_STEP_SUMMARY"
-                 cat test_results.txt >> "$GITHUB_STEP_SUMMARY"
+                 
+                 # Append the SHA inside its own markdown block
+                 echo '```' >> "\$GITHUB_STEP_SUMMARY"
+                 echo "Commit: \(SHORT_SHA" >> "\)GITHUB_STEP_SUMMARY"
                  echo '```' >> "$GITHUB_STEP_SUMMARY"
-                 echo '```' >> ${{ GITHUB_SHA::7}} >> "$GITHUB_STEP_SUMMARY"
-            
