@@ -19,11 +19,36 @@ jobs:
         steps:
             # FIX 3: Moved checkout to the absolute beginning so 'ls -la' and 'git status' actually work
             - name: Get the code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v4.2.2
+              with:
+                fetch-depth: 0  # Fetch all history for all branches and tags
+            # Extract the version from package.json and save it to env context
+            - name: Extract Project Version
+              id: get_version
+              run: |
+                VERSION=$(node -p "require('./app/package.json').version")
+                echo "version=$VERSION" >> $GITHUB_ENV
+
+            # NEW: Send the start notification email cleanly on Node 24 compatible engines
+            - name: 📧 Notify Development Start
+              uses: dawidd6/action-send-mail@v4
+              with:
+                server_address: smtp.gmail.com
+                server_port: 465
+                secure: true
+                username: ${{ secrets.EMAIL }}
+                password: ${{ secrets.EMAIL_PASSWORD }}
+                subject: "🚀 Development Pipeline Started"
+                to: ${{ secrets.EMAIL }}
+                from: "DevOps Admin"
+                body: |
+                  Development pipeline has started!
+                  Branch: ${{ github.ref_name }}
+                  Version: ${{ env.version }}
 
             # 2. Force the runner container context to explicitly load Node.js 24
             - name: Set up Node.js 24
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v4.2.0
               with:
                 node-version: '24'
                 cache: 'npm'
@@ -64,3 +89,30 @@ jobs:
                  echo '```' >> "\$GITHUB_STEP_SUMMARY"
                  echo "Commit: \(SHORT_SHA" >> "\)GITHUB_STEP_SUMMARY"
                  echo '```' >> "$GITHUB_STEP_SUMMARY"
+            # Check if tests failed in the log file, and fail the job if they did
+            - name: Evaluate Test Status
+              run: |
+                if grep -qi "fail" ./app/test_results.txt; then
+                  echo "Tests detected a failure status."
+                  exit 1
+                fi
+
+            # Notify Development Failure (Upgraded to v4 to clear warnings)
+            - name: 📧 Notify Development Failure
+              if: failure()
+              uses: dawidd6/action-send-mail@v4
+              with:
+                server_address: smtp.gmail.com
+                server_port: 465
+                secure: true
+                username: ${{ secrets.EMAIL }}
+                password: ${{ secrets.EMAIL_PASSWORD }}
+                subject: "❌ Development Stage Failed - Version ${{ env.version }}"
+                to: ${{ secrets.EMAIL }}
+                from: "DevOps Admin"
+                body: |
+                  ❌ Development stage failed!
+                  
+                  🚨 Build or tests failed in development
+                  Branch: ${{ github.ref_name }}
+                  Version: ${{ env.version }}

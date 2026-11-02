@@ -20,10 +20,36 @@ jobs:
         # Ensure we only build if the tests passed successfully
         if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
         steps:
+            # FIX 1: Downgraded checkout to stable production v4.2.2 to remove Node 20 deprecation warnings
             - name: Get the code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v4.2.2
               with:
-                ref: ${{ github.event.workflow_run.head_sha }}
+                ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+                fetch-depth: 0
+
+            # NEW: Extract the version from package.json and save it to env context
+            - name: Extract Project Version
+              id: get_version
+              run: |
+                VERSION=$(node -p "require('./app/package.json').version")
+                echo "version=$VERSION" >> $GITHUB_ENV
+
+            # NEW: Send the start notification email cleanly on Node 24 compatible engines
+            - name: 📧 Notify Development Start
+              uses: dawidd6/action-send-mail@v4
+              with:
+                server_address: ://gmail.com
+                server_port: 465
+                secure: true
+                username: ${{ secrets.EMAIL }}
+                password: ${{ secrets.EMAIL_PASSWORD }}
+                subject: "🚀 Development Pipeline Started"
+                to: ${{ secrets.EMAIL }}
+                from: "DevOps Admin"
+                body: |
+                  Development pipeline has started!
+                  Branch: ${{ github.ref_name }}
+                  Version: ${{ env.version }}
 
             - name: Set Up Docker
               uses: docker/setup-buildx-action@v3
@@ -42,3 +68,23 @@ jobs:
                 file: ./Dockerfile
                 push: true
                 tags: ${{ secrets.DOCKERHUB_USERNAME }}/napa:${{ github.event.workflow_run.head_sha || github.sha }}
+
+            # NEW: Notify Development Failure (Upgraded to v4 to clear warnings)
+            - name: 📧 Notify Development Failure
+              if: failure()
+              uses: dawidd6/action-send-mail@v4
+              with:
+                server_address: ://gmail.com
+                server_port: 465
+                secure: true
+                username: ${{ secrets.EMAIL }}
+                password: ${{ secrets.EMAIL_PASSWORD }}
+                subject: "❌ Development Stage Failed - Version ${{ env.version }}"
+                to: ${{ secrets.EMAIL }}
+                from: "DevOps Admin"
+                body: |
+                  ❌ Development stage failed!
+                  
+                  🚨 Build or tests failed in development
+                  Branch: ${{ github.ref_name }}
+                  Version: ${{ env.version }}
