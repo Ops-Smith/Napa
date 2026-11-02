@@ -88,3 +88,17 @@ jobs:
                   🚨 Build or tests failed in development
                   Branch: ${{ github.ref_name }}
                   Version: ${{ env.version }}
+
+            - name: Summary table
+              if: always()
+              run: |
+                SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+                {
+                echo "### Pipeline status"
+                echo ""
+                echo "| Check | Result |"
+                echo "|---|---|"
+                echo "| CI Hello Run | ${{ job.status }} |"
+                echo "| Commit | $SHORT_SHA |"
+                echo "| Branch | $GITHUB_REF_NAME |"
+                } >> "$GITHUB_STEP_SUMMARY"

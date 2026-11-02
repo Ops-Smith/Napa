@@ -65,9 +65,23 @@ jobs:
                 context: .
                 file: ./Dockerfile
                 push: true
-                # FIX 1: Also export to the local Docker daemon workspace so Trivy can see it
                 load: true
                 tags: ${{ secrets.DOCKERHUB_USERNAME }}/napa:${{ github.event.workflow_run.head_sha || github.sha }}
+
+            - name: Upload Image Artifact
+              uses: actions/upload-artifact@v4
+              with:
+                name: napa-docker-artifact
+                path: napa-image.tar
+                retention-days: 1
+            - name: Archive Test Logs
+              uses: actions/upload-artifact@v4
+              with:
+                name: pipeline-text-logs
+                path: |
+                    app/test_results.txt
+                    trivy-results.txt
+                retention-days: 5
 
             # 2. Scan the image with Trivy
             - name: Scan the image with Trivy
@@ -137,3 +151,17 @@ jobs:
                   🚨 Build, tests, or Trivy vulnerability scan failed in development
                   Branch: ${{ github.ref_name }}
                   Version: ${{ env.version }}
+
+            - name: Summary table
+              if: always()
+              run: |
+                SHORT_SHA=$(echo "${{ github.event.workflow_run.head_sha || github.sha }}" | cut -c1-7)
+                {
+                echo "### Pipeline status"
+                echo ""
+                echo "| Check | Result |"
+                echo "|---|---|"
+                echo "| Docker Build | ${{ job.status }} |"
+                echo "| Commit | $SHORT_SHA |"
+                echo "| Branch | $GITHUB_REF_NAME |"
+                } >> "$GITHUB_STEP_SUMMARY"

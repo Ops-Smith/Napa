@@ -1,0 +1,120 @@
+name: "Deploy Actions"
+
+on:
+    workflow_run:
+        workflows: ["Build Actions"]
+        types:
+            - completed
+
+permissions:
+    contents: read
+
+jobs:
+    deploy-container:
+        runs-on: ubuntu-latest
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
+        steps:
+            - name: Download Image Artifact
+              uses: actions/download-artifact@v4
+              with:
+                name: napa-docker-artifact
+                run-id: ${{ github.event.workflow_run.id }}
+                github-token: ${{ secrets.GITHUB_TOKEN }}
+
+
+            - name: Archive Test Logs
+              uses: actions/upload-artifact@v4
+              with:
+                name: pipeline-text-logs
+                path: |
+                    app/test_results.txt
+                    trivy-results.txt
+                retention-days: 5
+            
+            # 1. Start Email Notification
+            - name: 📧 Notify Deployment Start
+              uses: dawidd6/action-send-mail@v4
+              with:
+                server_address: ://gmail.com
+                server_port: 465
+                secure: true
+                username: ${{ secrets.EMAIL }}
+                password: ${{ secrets.EMAIL_PASSWORD }}
+                subject: "🚀 Deployment Pipeline Started"
+                to: ${{ secrets.EMAIL }}
+                from: "DevOps Admin"
+                body: |
+                  Deployment pipeline has started!
+                  Branch: ${{ github.ref_name }}
+                  Version: ${{ env.version }}
+
+            - name: Load Docker Image
+              run: |
+                ls -la
+                docker load -i napa-image.tar
+
+            - name: Run Containerized Application
+              run: |
+                docker ps -q --filter "name=napa-app" | xargs -r docker stop
+                docker ps -aq --filter "name=napa-app" | xargs -r docker rm
+                
+                docker run -d --name napa-app -p 3000:3000 --restart always \
+                  $(docker images --format "{{.Repository}}:{{.Tag}}" | grep "napa" | head -n 1)
+                
+                sleep 5
+                docker ps
+                docker logs napa-app
+
+            # 2. Success Email Notification
+            - name: 📧 Notify Deployment Success
+              if: success()
+              uses: dawidd6/action-send-mail@v4
+              with:
+                server_address: ://gmail.com
+                server_port: 465
+                secure: true
+                username: ${{ secrets.EMAIL }}
+                password: ${{ secrets.EMAIL_PASSWORD }}
+                subject: "✅ Container Deployed Successfully - Version ${{ env.version }}"
+                to: ${{ secrets.EMAIL }}
+                from: "DevOps Admin"
+                body: |
+                  🎉 Success! The container application is live on the server environment.
+                  
+                  Branch: ${{ github.ref_name }}
+                  Version: ${{ env.version }}
+
+            
+            # 3. Failure Email Notification
+            - name: 📧 Notify Deployment Failure
+              if: failure()
+              uses: dawidd6/action-send-mail@v4
+              with:
+                server_address: ://gmail.com
+                server_port: 465
+                secure: true
+                username: ${{ secrets.EMAIL }}
+                password: ${{ secrets.EMAIL_PASSWORD }}
+                subject: "❌ Deployment Stage Failed - Version ${{ env.version }}"
+                to: ${{ secrets.EMAIL }}
+                from: "DevOps Admin"
+                body: |
+                  ❌ Deployment stage failed!
+                  
+                  🚨 The Docker container failed to launch or load correctly.
+                  Branch: ${{ github.ref_name }}
+                  Version: ${{ env.version }}
+
+            - name: Summary table
+              if: always()
+              run: |
+                SHORT_SHA=$(echo "${{ github.event.workflow_run.head_sha || github.sha }}" | cut -c1-7)
+                {
+                echo "### Pipeline status"
+                echo ""
+                echo "| Check | Result |"
+                echo "|---|---|"
+                echo "| App Deployment | ${{ job.status }} |"
+                echo "| Commit | $SHORT_SHA |"
+                echo "| Branch | $GITHUB_REF_NAME |"
+                } >> "$GITHUB_STEP_SUMMARY"
