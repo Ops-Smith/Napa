@@ -88,4 +88,3 @@ jobs:
                   🚨 Build or tests failed in development
                   Branch: ${{ github.ref_name }}
                   Version: ${{ env.version }}
-g
