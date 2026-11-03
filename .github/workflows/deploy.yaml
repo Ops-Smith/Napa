@@ -75,30 +75,31 @@ jobs:
 
             - name: Run Containerized Application
               run: |
-                 docker stop napa-app mongo-db 2>/dev/null || true
-                 docker rm napa-app mongo-db 2>/dev/null || true
-                 docker network rm napa-network 2>/dev/null || true
+                docker stop napa-app mongo-db 2>/dev/null || true
+                docker rm napa-app mongo-db 2>/dev/null || true
+                docker network rm napa-network 2>/dev/null || true
 
-                 docker network create napa-network
+                docker network create napa-network
 
-                 # 1. Start MongoDB matching your .env credentials
-                 docker run -d --name mongo-db --network napa-network \
-                   -e MONGO_INITDB_ROOT_USERNAME=admin \
-                   -e MONGO_INITDB_ROOT_PASSWORD=password \
-                   mongo:latest
+                docker run -d --name mongo-db --network napa-network \
+                  -e MONGO_INITDB_ROOT_USERNAME=admin \
+                  -e MONGO_INITDB_ROOT_PASSWORD=password \
+                  mongo:latest
 
-                 # 2. Pass DB_URL explicitly so server.js finds it
-                 docker run -d --name napa-app -p 3000:3000 --network napa-network --restart always \
-                   -e DB_URL="mongodb://admin:password@mongo-db:27017/napa?authSource=admin" \
-                   -e DB_NAME=napa \
-                   -e PORT=3000 \
-                   -e NODE_ENV=production \
-                   $(docker images --format "{{.Repository}}:{{.Tag}}" | grep "napa" | head -n 1)
-                 sleep 5
-                 docker ps
-                 docker logs napa-app
+                # Safely capture the loaded image tag to prevent shell evaluation errors
+                IMAGE_TAG=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "napa" | head -n 1)
 
-
+                # PASS DB_URL TO MATCH server.js AND AVOID CONNECTION STRING UNDEFINED ERRORS
+                docker run -d --name napa-app -p 3000:3000 --network napa-network --restart always \
+                  -e DB_URL="mongodb://admin:password@mongo-db:27017/napa?authSource=admin" \
+                  -e DB_NAME="napa" \
+                  -e PORT="3000" \
+                  -e NODE_ENV="production" \
+                  "$IMAGE_TAG"
+                
+                sleep 5
+                docker ps
+                docker logs napa-app
 
             # 3. Success Email Notification
             - name: 📧 Notify Deployment Success
