@@ -77,23 +77,14 @@ jobs:
                 SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
 
                 echo "### Test Results" >> "$GITHUB_STEP_SUMMARY"
-                
-                # Check if test results file exists and output as a Markdown table
+                echo '```' >> "$GITHUB_STEP_SUMMARY"
+
                 if [ -f ./app/test_results.txt ]; then
-                  echo "| Test Log / Output |" >> "$GITHUB_STEP_SUMMARY"
-                  echo "| --- |" >> "$GITHUB_STEP_SUMMARY"
-                  while IFS= read -r line; do
-                    # Escape pipe characters if they appear in log lines to prevent breaking the table
-                    safe_line=$(echo "$line" | sed 's/\|/\\|/g')
-                    echo "| \`$safe_line\` |" >> "$GITHUB_STEP_SUMMARY"
-                  done < ./app/test_results.txt
+                  sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]//g" ./app/test_results.txt >> "$GITHUB_STEP_SUMMARY"
                 else
-                  echo "| Status |" >> "$GITHUB_STEP_SUMMARY"
-                  echo "| --- |" >> "$GITHUB_STEP_SUMMARY"
-                  echo "| No test logs captured. |" >> "$GITHUB_STEP_SUMMARY"
+                   echo "No test logs captured." >> "$GITHUB_STEP_SUMMARY"
                 fi
-                
-                echo "" >> "$GITHUB_STEP_SUMMARY"
+                echo '```' >> "$GITHUB_STEP_SUMMARY"
                 echo "**Commit:** \`$SHORT_SHA\`" >> "$GITHUB_STEP_SUMMARY"
 
             - name: Show the Trivy report
