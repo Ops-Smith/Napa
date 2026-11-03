@@ -108,7 +108,7 @@ jobs:
                 path: |
                     app/test_results.txt
                     trivy-results.txt
-                # Prevents a pipeline crash if app/test_results.txt isn't in this job's workspace directory
+                # Prevents a pipeline crash if app/test_results.txt isn't in this job's workspace directory.
                 if-no-files-found: warn
                 retention-days: 5
 
