@@ -76,7 +76,7 @@ jobs:
                  SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
 
                  echo "### Test results" >> "$GITHUB_STEP_SUMMARY"
-                 echo '```' >> "\$GITHUB_STEP_SUMMARY"
+                 echo '```' >> "$GITHUB_STEP_SUMMARY"
                  
                  # FIX 6: Read log file from the correct relative path (inside app/)
                  if [ -f ./app/test_results.txt ]; then
@@ -86,9 +86,7 @@ jobs:
                  fi
                  
                  echo '```' >> "$GITHUB_STEP_SUMMARY"
-                 echo '```' >> "\$GITHUB_STEP_SUMMARY"
-                 echo "Commit: \(SHORT_SHA" >> "\)GITHUB_STEP_SUMMARY"
-                 echo '```' >> "$GITHUB_STEP_SUMMARY"
+                 echo "**Commit:** \`SHORT_SHA`" >> "GITHUB_STEP_SUMMARY"
             # Check if tests failed in the log file, and fail the job if they did
             - name: Evaluate Test Status
               run: |
