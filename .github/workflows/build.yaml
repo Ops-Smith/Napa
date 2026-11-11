@@ -49,6 +49,14 @@ jobs:
                   Branch: ${{ github.ref_name }}
                   Version: ${{ env.version }}
 
+            # 2. Force the runner container context to explicitly load Node.js 24
+            - name: Set up Node.js 24
+              uses: actions/setup-node@v4.2.0
+              with:
+                node-version: '24'
+                cache: 'npm'
+                cache-dependency-path: app/package-lock.json
+
             - name: Generate Local Environment Configuration
               run: |
                 echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" > ./app/.env
