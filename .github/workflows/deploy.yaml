@@ -5,6 +5,10 @@ on:
         workflows: ["Build Actions"]
         types:
             - completed
+    push:
+      branches: [master]
+      paths-ignore:
+        - "README.md"
 
 permissions:
     contents: read
